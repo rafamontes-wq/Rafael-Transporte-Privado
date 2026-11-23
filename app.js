@@ -88,3 +88,15 @@ window.solicitarViaje = async function() {
     }
 
 };
+ window.distanciaCalculadaKm = distanciaKm;
+        window.precioCalculado = Number(total);
+
+        precio.innerText =
+            `Distancia: ${distanciaKm.toFixed(2)} km | Precio estimado: $${total}`;
+
+    } catch (error) {
+        console.error(error);
+        precio.innerText = "No se pudo calcular el precio.";
+        alert(error.message);
+    }
+};
