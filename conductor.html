@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel del Conductor</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.viaje {
+    background: white;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px #ddd;
+}
+.estado {
+    color: #16a34a;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🚗 Panel del Conductor</h1>
+<p>Rafael Transporte Privado</p>
+</header>
+
+<div class="container">
+
+<h2>Solicitudes de viaje</h2>
+
+<div id="solicitudes">
+Cargando solicitudes...
+</div>
+
+</div>
+
+<script type="module">
+
+import { db } from "./firebase-config.js";
+
+import {
+    ref,
+    onValue,
+    update
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+const solicitudes = document.getElementById("solicitudes");
+
+onValue(ref(db, "solicitudes"), (snapshot) => {
+
+    solicitudes.innerHTML = "";
+
+    if (!snapshot.exists()) {
+        solicitudes.innerHTML = "No hay solicitudes todavía.";
+        return;
+    }
+
+    snapshot.forEach((child) => {
+
+        const viaje = child.val();
+        const id = child.key;
+
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "viaje";
+
+        const titulo = document.createElement("h3");
+        titulo.textContent = "Pasajero: " + (viaje.nombre || "");
+
+        const telefono = document.createElement("p");
+        telefono.textContent = "Teléfono: " + (viaje.telefono || "");
+
+        const destino = document.createElement("p");
+        destino.textContent = "Destino: " + (viaje.destino || "");
+
+        const estado = document.createElement("p");
+        estado.className = "estado";
+        estado.textContent = "Estado: " + (viaje.estado || "");
+
+        tarjeta.append(titulo, telefono, destino, estado);
+
+        if (viaje.ubicacion) {
+            const mapa = document.createElement("a");
+
+            mapa.href = "https://www.google.com/maps/dir/?api=1&destination=" +
+                viaje.ubicacion.latitud + "," +
+                viaje.ubicacion.longitud;
+
+            mapa.target = "_blank";
+            mapa.textContent = "📍 VER UBICACIÓN DEL CLIENTE";
+
+            tarjeta.appendChild(mapa);
+        }
+
+        if (viaje.estado === "pendiente") {
+
+            const aceptar = document.createElement("button");
+
+            aceptar.textContent = "ACEPTAR VIAJE";
+
+            aceptar.onclick = () => {
+                update(ref(db, "solicitudes/" + id), {
+                    estado: "aceptado"
+                });
+            };
+
+            tarjeta.appendChild(aceptar);
+        }
+
+        solicitudes.appendChild(tarjeta);
+
+    });
+
+});
+
+</script>
+
+</body>
+</html>
