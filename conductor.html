@@ -1,117 +1,145 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panel del Conductor</title>
-<link rel="stylesheet" href="style.css">
-<style>
-.viaje {
-    background: white;
-    padding: 20px;
-    margin-bottom: 15px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px #ddd;
-}
-.estado {
-    color: #16a34a;
-    font-weight: bold;
-}
-</style>
-</head>
+l>
+<input id="correo" type="email" placeholder="Tu correo">
 
-<body>
+<label>Contraseña</label>
+<input id="clave" type="password" placeholder="Tu contraseña">
 
-<header>
-<h1>🚗 Panel del Conductor</h1>
-<p>Rafael Transporte Privado</p>
-</header>
+<button id="entrar">INICIAR SESIÓN</button>
 
-<div class="container">
+<p id="mensaje"></p>
+</div>
 
-<h2>Solicitudes de viaje</h2>
+<div class="card" id="panel" hidden>
+<h2>Panel del conductor</h2>
+<p>Bienvenido. Aquí recibirás tus solicitudes.</p>
 
-<div id="solicitudes">
+<button id="salir">CERRAR SESIÓN</button>
+
+<div id="solicitudes" style="margin-top:20px">
 Cargando solicitudes...
+</div>
 </div>
 
 </div>
 
 <script type="module">
 
-import { db } from "./firebase-config.js";
+import { app, db } from "./firebase-config.js";
 
 import {
-    ref,
-    onValue,
-    update
+ getAuth,
+ signInWithEmailAndPassword,
+ onAuthStateChanged,
+ signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+import {
+ ref,
+ onValue,
+ update
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
+const auth = getAuth(app);
+
+const login = document.getElementById("login");
+const panel = document.getElementById("panel");
+const mensaje = document.getElementById("mensaje");
 const solicitudes = document.getElementById("solicitudes");
 
-onValue(ref(db, "solicitudes"), (snapshot) => {
+document.getElementById("entrar").onclick = async () => {
 
-    solicitudes.innerHTML = "";
+ const correo = document.getElementById("correo").value.trim();
+ const clave = document.getElementById("clave").value;
 
-    if (!snapshot.exists()) {
-        solicitudes.innerHTML = "No hay solicitudes todavía.";
-        return;
-    }
+ if (!correo || !clave) {
+   mensaje.textContent = "Completa los datos.";
+   return;
+ }
 
-    snapshot.forEach((child) => {
+ try {
+   await signInWithEmailAndPassword(auth, correo, clave);
+   mensaje.textContent = "";
+ } catch (error) {
+   mensaje.textContent = "Correo o contraseña incorrectos.";
+ }
 
-        const viaje = child.val();
-        const id = child.key;
+};
 
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "viaje";
+document.getElementById("salir").onclick = () => signOut(auth);
 
-        const titulo = document.createElement("h3");
-        titulo.textContent = "Pasajero: " + (viaje.nombre || "");
+onAuthStateChanged(auth, (usuario) => {
 
-        const telefono = document.createElement("p");
-        telefono.textContent = "Teléfono: " + (viaje.telefono || "");
+ login.hidden = !!usuario;
+ panel.hidden = !usuario;
 
-        const destino = document.createElement("p");
-        destino.textContent = "Destino: " + (viaje.destino || "");
+ if (!usuario) return;
 
-        const estado = document.createElement("p");
-        estado.className = "estado";
-        estado.textContent = "Estado: " + (viaje.estado || "");
+ onValue(ref(db, "solicitudes"), (snapshot) => {
 
-        tarjeta.append(titulo, telefono, destino, estado);
+   solicitudes.innerHTML = "";
 
-        if (viaje.ubicacion) {
-            const mapa = document.createElement("a");
+   if (!snapshot.exists()) {
+     solicitudes.textContent = "No hay solicitudes todavía.";
+     return;
+   }
 
-            mapa.href = "https://www.google.com/maps/dir/?api=1&destination=" +
-                viaje.ubicacion.latitud + "," +
-                viaje.ubicacion.longitud;
+   snapshot.forEach((child) => {
 
-            mapa.target = "_blank";
-            mapa.textContent = "📍 VER UBICACIÓN DEL CLIENTE";
+     const viaje = child.val();
+     const id = child.key;
 
-            tarjeta.appendChild(mapa);
-        }
+     const tarjeta = document.createElement("div");
+     tarjeta.className = "viaje";
 
-        if (viaje.estado === "pendiente") {
+     const titulo = document.createElement("h3");
+     titulo.textContent = "Pasajero: " + (viaje.nombre || "");
 
-            const aceptar = document.createElement("button");
+     const telefono = document.createElement("p");
+     telefono.textContent = "Teléfono: " + (viaje.telefono || "");
 
-            aceptar.textContent = "ACEPTAR VIAJE";
+     const destino = document.createElement("p");
+     destino.textContent = "Destino: " + (viaje.destino || "");
 
-            aceptar.onclick = () => {
-                update(ref(db, "solicitudes/" + id), {
-                    estado: "aceptado"
-                });
-            };
+     const estado = document.createElement("p");
+     estado.textContent = "Estado: " + (viaje.estado || "");
 
-            tarjeta.appendChild(aceptar);
-        }
+     tarjeta.append(titulo, telefono, destino, estado);
 
-        solicitudes.appendChild(tarjeta);
+     if (viaje.ubicacion) {
 
-    });
+       const mapa = document.createElement("a");
+
+       mapa.href = "https://www.google.com/maps/dir/?api=1&destination=" +
+         viaje.ubicacion.latitud + "," +
+         viaje.ubicacion.longitud;
+
+       mapa.target = "_blank";
+       mapa.rel = "noopener";
+       mapa.textContent = "📍 VER UBICACIÓN DEL CLIENTE";
+
+       tarjeta.appendChild(mapa);
+     }
+
+     if (viaje.estado === "pendiente") {
+
+       const aceptar = document.createElement("button");
+
+       aceptar.textContent = "ACEPTAR VIAJE";
+
+       aceptar.onclick = async () => {
+         await update(ref(db, "solicitudes/" + id), {
+           estado: "aceptado"
+         });
+       };
+
+       tarjeta.appendChild(aceptar);
+     }
+
+     solicitudes.appendChild(tarjeta);
+
+   });
+
+ });
 
 });
 
