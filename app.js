@@ -1,10 +1,17 @@
-import { db } from "./firebase-config.js";
+import { app, db } from "./firebase-config.js";
+
+import {
+    getAuth,
+    signInAnonymously
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 import {
     ref,
     push,
     set
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+const auth = getAuth(app);
 
 let ubicacionCliente = null;
 
@@ -44,21 +51,18 @@ window.solicitarViaje = async function() {
         return;
     }
 
-    const boton = document.querySelector(
-        'button[onclick="solicitarViaje()"]'
-    );
-
-    boton.disabled = true;
-
     try {
+
+        const usuario = auth.currentUser || 
+            (await signInAnonymously(auth)).user;
 
         const nuevoViaje = push(ref(db, "solicitudes"));
 
         await set(nuevoViaje, {
 
-            nombre: nombre,
-            telefono: telefono,
-            destino: destino,
+            nombre,
+            telefono,
+            destino,
 
             ubicacion: ubicacionCliente,
 
@@ -71,19 +75,16 @@ window.solicitarViaje = async function() {
         });
 
         document.getElementById("estado").innerText =
-            "¡Solicitud enviada correctamente!";
+            "¡Tu solicitud fue enviada correctamente!";
 
-        alert("Tu solicitud de transporte fue enviada.");
+        alert("¡Solicitud enviada! Pronto recibirás respuesta.");
 
     } catch (error) {
 
         console.error(error);
 
-        alert("No se pudo enviar la solicitud. Revisaremos la conexión.");
-
-    } finally {
-
-        boton.disabled = false;
+        alert("Error al enviar la solicitud: " + error.message);
 
     }
+
 };
