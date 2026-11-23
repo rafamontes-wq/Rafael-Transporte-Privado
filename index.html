@@ -1,13 +1,103 @@
+1.
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rafael Transporte Privado</title>
-    <meta name="theme-color" content="#111827">
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
+<header>
     <h1>🚗 Rafael Transporte Privado</h1>
-    <p>Tu transporte seguro y confiable.</p>
+    <p>Viaja seguro y cómodo</p>
+</header>
+
+<div class="container">
+    <div class="card">
+
+        <h2>Solicitar transporte</h2>
+
+        <label>Nombre del pasajero</label>
+        <input id="nombre" type="text" placeholder="Tu nombre">
+
+        <label>Ubicación de recogida</label>
+        <input id="origen" type="text" placeholder="¿Dónde te recogemos?">
+
+        <button onclick="obtenerUbicacion()">
+            📍 Obtener mi ubicación GPS
+        </button>
+
+        <label>Destino</label>
+        <input id="destino" type="text" placeholder="¿A dónde deseas ir?">
+
+        <label>Teléfono</label>
+        <input id="telefono" type="tel" placeholder="Tu teléfono">
+
+        <h2 id="precio" style="margin-top:25px">
+            Precio estimado: pendiente
+        </h2>
+
+        <button onclick="solicitarViaje()">
+            SOLICITAR VIAJE
+        </button>
+
+        <p id="estado" style="margin-top:20px;text-align:center"></p>
+
+    </div>
+</div>
+
+<footer>
+    Rafael Transporte Privado © 2026
+</footer>
+
+<script>
+let latitud = null;
+let longitud = null;
+
+function obtenerUbicacion() {
+
+    if (!navigator.geolocation) {
+        alert("Tu dispositivo no permite GPS.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+
+            latitud = position.coords.latitude;
+            longitud = position.coords.longitude;
+
+            document.getElementById("origen").value =
+                "Ubicación GPS obtenida";
+
+            alert("¡Ubicación obtenida correctamente!");
+
+        },
+        function() {
+            alert("No se pudo obtener tu ubicación. Activa el GPS.");
+        }
+    );
+}
+
+function solicitarViaje() {
+
+    const nombre = document.getElementById("nombre").value;
+    const destino = document.getElementById("destino").value;
+    const telefono = document.getElementById("telefono").value;
+
+    if (!nombre || !destino || !telefono || latitud === null) {
+        alert("Completa los datos y obtén tu ubicación GPS.");
+        return;
+    }
+
+    document.getElementById("estado").innerText =
+        "Solicitud preparada. Próximamente conectaremos el sistema de viajes.";
+
+}
+</script>
+
 </body>
 </html>
